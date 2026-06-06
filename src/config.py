@@ -25,11 +25,24 @@ def load_config(path: str) -> Config:
     if raw is None:
         raise ValueError(f"Config file is empty: {path}")
 
+    dingtalk = raw.get("dingtalk")
+    if not isinstance(dingtalk, dict):
+        raise ValueError(
+            f"Config 'dingtalk' must be a dict, got {type(dingtalk).__name__}"
+        )
+
+    poll_interval = raw.get("poll_interval_seconds", 60)
+    if not isinstance(poll_interval, int) or poll_interval <= 0:
+        raise ValueError(
+            f"Config 'poll_interval_seconds' must be a positive integer, "
+            f"got {poll_interval!r}"
+        )
+
     return Config(
         authors=raw.get("authors", []),
         nitter_instances=raw.get("nitter_instances", []),
-        dingtalk_webhook_url=raw.get("dingtalk", {}).get("webhook_url", ""),
+        dingtalk_webhook_url=dingtalk.get("webhook_url", ""),
         a_stock_keywords=raw.get("a_stock_keywords", []),
-        poll_interval_seconds=raw.get("poll_interval_seconds", 60),
+        poll_interval_seconds=poll_interval,
         database_path=raw.get("database_path", "data/tweets.db"),
     )

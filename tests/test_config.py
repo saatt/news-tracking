@@ -28,7 +28,7 @@ database_path: "data/tweets.db"
 """
 
 
-def test_load_config_parses_all_fields():
+def test_load_config_parses_all_fields() -> None:
     with tempfile.NamedTemporaryFile(
         mode="w", suffix=".yaml", delete=False, encoding="utf-8"
     ) as f:
@@ -56,12 +56,12 @@ def test_load_config_parses_all_fields():
         os.unlink(path)
 
 
-def test_load_config_missing_file_raises():
+def test_load_config_missing_file_raises() -> None:
     with pytest.raises(FileNotFoundError):
         load_config("nonexistent_file.yaml")
 
 
-def test_load_config_empty_file_raises():
+def test_load_config_empty_file_raises() -> None:
     with tempfile.NamedTemporaryFile(
         mode="w", suffix=".yaml", delete=False, encoding="utf-8"
     ) as f:
@@ -70,6 +70,64 @@ def test_load_config_empty_file_raises():
 
     try:
         with pytest.raises(ValueError, match="empty"):
+            load_config(path)
+    finally:
+        os.unlink(path)
+
+
+def test_load_config_defaults_applied_when_keys_missing() -> None:
+    minimal_yaml = """
+    dingtalk:
+      webhook_url: "https://example.com/webhook"
+    """
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".yaml", delete=False, encoding="utf-8"
+    ) as f:
+        f.write(minimal_yaml)
+        path = f.name
+
+    try:
+        config = load_config(path)
+        assert config.authors == []
+        assert config.nitter_instances == []
+        assert config.a_stock_keywords == []
+        assert config.poll_interval_seconds == 60
+        assert config.database_path == "data/tweets.db"
+    finally:
+        os.unlink(path)
+
+
+def test_load_config_rejects_negative_poll_interval() -> None:
+    bad_yaml = """
+    dingtalk:
+      webhook_url: "https://example.com/webhook"
+    poll_interval_seconds: -5
+    """
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".yaml", delete=False, encoding="utf-8"
+    ) as f:
+        f.write(bad_yaml)
+        path = f.name
+
+    try:
+        with pytest.raises(ValueError, match="positive integer"):
+            load_config(path)
+    finally:
+        os.unlink(path)
+
+
+def test_load_config_rejects_non_dict_dingtalk() -> None:
+    bad_yaml = """
+    dingtalk: "not_a_dict"
+    """
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".yaml", delete=False, encoding="utf-8"
+    ) as f:
+        f.write(bad_yaml)
+        path = f.name
+
+    try:
+        with pytest.raises(ValueError, match="must be a dict"):
             load_config(path)
     finally:
         os.unlink(path)
