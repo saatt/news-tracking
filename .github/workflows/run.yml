@@ -1,4 +1,4 @@
-name: Twitter → DingTalk Tracker
+name: Twitter to DingTalk Tracker
 
 on:
   schedule:
