@@ -1,3 +1,4 @@
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -31,6 +32,11 @@ def load_config(path: str) -> Config:
             f"Config 'dingtalk' must be a dict, got {type(dingtalk).__name__}"
         )
 
+    webhook_url = (
+        os.environ.get("DINGTALK_WEBHOOK_URL")
+        or dingtalk.get("webhook_url", "")
+    )
+
     poll_interval = raw.get("poll_interval_seconds", 60)
     if not isinstance(poll_interval, int) or poll_interval <= 0:
         raise ValueError(
@@ -41,7 +47,7 @@ def load_config(path: str) -> Config:
     return Config(
         authors=raw.get("authors", []),
         nitter_instances=raw.get("nitter_instances", []),
-        dingtalk_webhook_url=dingtalk.get("webhook_url", ""),
+        dingtalk_webhook_url=webhook_url,
         a_stock_keywords=raw.get("a_stock_keywords", []),
         poll_interval_seconds=poll_interval,
         database_path=raw.get("database_path", "data/tweets.db"),

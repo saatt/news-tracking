@@ -7,7 +7,7 @@ nitter_instances:
   - "https://nitter.privacydev.net"
 
 dingtalk:
-  webhook_url: "https://oapi.dingtalk.com/robot/send?access_token=test_token"
+  webhook_url: ""  # Set DINGTALK_WEBHOOK_URL env var to override
 
 a_stock_keywords:
   - "A股"

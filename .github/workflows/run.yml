@@ -1,0 +1,40 @@
+name: Twitter → DingTalk Tracker
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"  # every 5 minutes
+  workflow_dispatch:        # manual trigger
+
+jobs:
+  track:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Download previous tweet database
+        uses: actions/download-artifact@v4
+        with:
+          name: tweets-db
+          path: data/
+        continue-on-error: true  # OK if no previous DB exists
+
+      - name: Run tracker
+        env:
+          DINGTALK_WEBHOOK_URL: ${{ secrets.DINGTALK_WEBHOOK_URL }}
+        run: python -m src.main config.yaml --once
+
+      - name: Save tweet database for next run
+        uses: actions/upload-artifact@v4
+        with:
+          name: tweets-db
+          path: data/tweets.db
+          retention-days: 1
