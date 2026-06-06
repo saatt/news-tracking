@@ -1,0 +1,20 @@
+authors:
+  - username: "aleabitoreddit"
+    display_name: "Ale Abit"
+
+nitter_instances:
+  - "https://nitter.net"
+  - "https://nitter.privacydev.net"
+
+dingtalk:
+  webhook_url: "https://oapi.dingtalk.com/robot/send?access_token=test_token"
+
+a_stock_keywords:
+  - "A股"
+  - "上证"
+  - "涨停"
+  - "跌停"
+
+poll_interval_seconds: 60
+
+database_path: "data/tweets.db"
