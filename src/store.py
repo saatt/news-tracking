@@ -1,6 +1,18 @@
 import aiosqlite
 
 
+class TweetStoreError(Exception):
+    """Base exception for TweetStore errors."""
+
+
+class DuplicateTweetError(TweetStoreError):
+    """Raised when attempting to save a tweet that already exists."""
+
+
+class StoreNotInitializedError(TweetStoreError):
+    """Raised when using a store that hasn't been initialized."""
+
+
 class TweetStore:
     def __init__(self, db_path: str):
         self.db_path = db_path
@@ -25,7 +37,14 @@ class TweetStore:
         )
         await self._conn.commit()
 
+    def _require_conn(self):
+        if self._conn is None:
+            raise StoreNotInitializedError(
+                "Store not initialized — call init() first"
+            )
+
     async def exists(self, tweet_id: str) -> bool:
+        self._require_conn()
         cursor = await self._conn.execute(
             "SELECT 1 FROM tweets WHERE id = ?", (tweet_id,)
         )
@@ -42,29 +61,38 @@ class TweetStore:
         is_a_stock: bool,
         is_reply: bool,
     ):
-        await self._conn.execute(
-            """
-            INSERT INTO tweets (id, author, content, link, published, is_a_stock, is_reply)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                tweet_id,
-                author,
-                content,
-                link,
-                published,
-                1 if is_a_stock else 0,
-                1 if is_reply else 0,
-            ),
-        )
-        await self._conn.commit()
+        self._require_conn()
+        try:
+            await self._conn.execute(
+                """
+                INSERT INTO tweets (id, author, content, link, published, is_a_stock, is_reply)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    tweet_id,
+                    author,
+                    content,
+                    link,
+                    published,
+                    1 if is_a_stock else 0,
+                    1 if is_reply else 0,
+                ),
+            )
+            await self._conn.commit()
+        except aiosqlite.IntegrityError:
+            raise DuplicateTweetError(
+                f"Tweet {tweet_id} already exists in store"
+            )
 
     async def get_latest_published(self, author: str) -> str | None:
+        self._require_conn()
         cursor = await self._conn.execute(
             "SELECT MAX(published) FROM tweets WHERE author = ?", (author,)
         )
         row = await cursor.fetchone()
-        return row[0] if row and row[0] else None
+        if row is None:
+            return None
+        return row[0]
 
     async def close(self):
         if self._conn:
